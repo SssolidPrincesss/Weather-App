@@ -1,0 +1,15 @@
+<!-- res/drawable/sunrise_curve.xml -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp"
+    android:height="100dp"
+    android:viewportWidth="240"
+    android:viewportHeight="100">
+
+    <!-- Жёлтая линия (солнце над горизонтом) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFD700"
+        android:strokeWidth="5"
+        android:pathData="M0,80 C60,30 180,30 240,80" />
+
+</vector>

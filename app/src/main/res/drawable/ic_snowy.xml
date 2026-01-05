@@ -1,0 +1,76 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Центральная точка -->
+    <path
+        android:pathData="M12,12 a1,1 0 1,1 0,0"
+        android:fillColor="#add8e6" />
+
+    <!-- Луч 0° (вправо) -->
+    <path
+        android:pathData="
+        M12,12 L16,12
+        M14.2,12.1 L15.7,10.3
+        M14.4,12.3 L15.7,13.8"
+        android:strokeColor="#add8e6"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round" />
+
+    <!-- Луч 60° (вправо-вниз) -->
+    <path
+        android:pathData="
+            M12,12 L14,15.464
+            M13,14.196 L12.5,15.804
+            M13,13.9 L15,14.596
+        "
+        android:strokeColor="#add8e6"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round" />
+
+    <!-- Луч 120° (влево-вниз) -->
+    <path
+        android:pathData="
+            M12,12 L10,15.464
+            M11,14.196 L11.5,15.804
+            M11,13.9 L9,14.3
+        "
+        android:strokeColor="#add8e6"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round" />
+
+    <!-- Луч 180° (влево) -->
+    <path
+        android:pathData="
+        M12,12 L8,12
+        M10,12 L8.5,10.5
+        M10,12 L8.5,13.5"
+        android:strokeColor="#add8e6"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round" />
+
+    <!-- Луч 240° (влево-вверх) -->
+    <path
+        android:pathData="
+            M12,12 L10,8.536
+            M11,9.5 L11.5,8
+            M10.5,10 L8.8,9.7
+        "
+        android:strokeColor="#add8e6"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round" />
+
+    <!-- Луч 300° (вправо-вверх) -->
+    <path
+        android:pathData="
+            M12,12 L14,8
+            M13.2,9.8 L12.4,7.9
+            M13.2,9.7 L15.3,9.3
+        "
+        android:strokeColor="#add8e6"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round" />
+
+</vector>
