@@ -32,33 +32,35 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.weatherapp.R
+import com.example.weatherapp.data.repository.RussianWeatherRepository
+import com.example.weatherapp.data.repository.YandexWeatherRepository
 import com.example.weatherapp.domain.model.HourlyWeather
 import com.example.weatherapp.domain.model.TimeOfDay
 import com.example.weatherapp.domain.model.WeatherCondition
 import com.example.weatherapp.utils.TimeUtils
-import android.os.Build
 import android.net.Uri
 import androidx.lifecycle.lifecycleScope
-import com.example.weatherapp.data.repository.RussianWeatherRepository
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
-    // === Карта осадков (исправлено) ===
+    // === Погода ===
+    private lateinit var tvTemperature: TextView
+    private lateinit var tvWeatherDesc: TextView
+    private lateinit var tvFeelsLike: TextView
+    private val yandexWeatherRepo = YandexWeatherRepository()
+
+    // === Карта осадков ===
     private lateinit var ivPrecipitationMap: ImageView
     private lateinit var pbPrecipitationLoading: ProgressBar
     private lateinit var tvPrecipitationError: TextView
     private lateinit var flPrecipitationContainer: FrameLayout
     private var currentLocation: Location? = null
-
     private val weatherRepository = RussianWeatherRepository()
 
     // === Основные компоненты ===
     private lateinit var adapter: HourlyForecastAdapter
     private lateinit var ivBackground: ImageView
-    private lateinit var tvWeatherDesc: TextView
 
     private var timeUpdateHandler: Handler? = null
     private val timeUpdateRunnable = object : Runnable {
@@ -67,6 +69,13 @@ class MainActivity : AppCompatActivity() {
             timeUpdateHandler?.postDelayed(this, 60_000)
         }
     }
+
+    //ветер
+    private lateinit var ivWindDirection: ImageView
+    private lateinit var tvWindSpeed: TextView
+    private lateinit var tvWindUnit: TextView
+    private lateinit var tvWindDescription: TextView
+    private lateinit var tvWindDirectionText: TextView
 
     private val timeChangedReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -84,22 +93,145 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Инициализация основных компонентов
+        // 1. Обязательные инициализации
         initViews()
+        initWeatherViews()
+
+        // 2. Инициализация вьюшек карты ДО загрузки
+        initPrecipitationViews()  // ✅ Ключевое изменение
+
+        // 3. Загрузка данных
         setupRecyclerView()
         initializeMockData()
-        updateBackground()
+        loadCurrentWeather()
+        loadPrecipitationMap()    // ✅ Теперь безопасно
 
-        // Инициализация карты осадков
-        initPrecipitationViews()
-        loadPrecipitationMap()
+        // Инициализация ветра
+        initWindViews()
+
+        // Установка данных ветра (в реальном приложении эти данные будут приходить из API)
+        setWindData(direction = 45f, speed = 10f) // 45° - северо-восток, 13 км/ч
+
+        updateBackground()
     }
 
     private fun initViews() {
         ivBackground = findViewById(R.id.ivBackground)
-        tvWeatherDesc = findViewById(R.id.tvWeatherDesc)
         findViewById<TextView>(R.id.tvLocationName).text = "Верхняя Пышма"
     }
+
+    private fun initWindViews() {
+        ivWindDirection = findViewById(R.id.ivWindDirection)
+        tvWindSpeed = findViewById(R.id.tvWindSpeed)
+        tvWindUnit = findViewById(R.id.tvWindUnit)
+        tvWindDescription = findViewById(R.id.tvWindDescription)
+        tvWindDirectionText = findViewById(R.id.tvWindDirectionText)
+    }
+
+    private fun setWindData(direction: Float, speed: Float, directionText: String = "—") {
+        // Скорость
+        tvWindSpeed.text = speed.toInt().toString()
+        tvWindUnit.text = "км/ч"
+
+        // Описание силы
+        tvWindDescription.text = getWindDescription(speed)
+
+        // Направление текстом
+        tvWindDirectionText.text = directionText
+
+        // Поворот стрелки
+        ivWindDirection.rotation = direction
+    }
+
+    private fun getWindDirectionText(degrees: Float): String {
+        return when {
+            degrees in 348.75f..360f || degrees in 0f..11.25f -> "С"
+            degrees in 11.25f..33.75f -> "ССВ"
+            degrees in 33.75f..56.25f -> "СВ"
+            degrees in 56.25f..78.75f -> "ВСВ"
+            degrees in 78.75f..101.25f -> "В"
+            degrees in 101.25f..123.75f -> "ВЮВ"
+            degrees in 123.75f..146.25f -> "ЮВ"
+            degrees in 146.25f..168.75f -> "ЮЮВ"
+            degrees in 168.75f..191.25f -> "Ю"
+            degrees in 191.25f..213.75f -> "ЮЮЗ"
+            degrees in 213.75f..236.25f -> "ЮЗ"
+            degrees in 236.25f..258.75f -> "ЗЮЗ"
+            degrees in 258.75f..281.25f -> "З"
+            degrees in 281.25f..303.75f -> "ЗСЗ"
+            degrees in 303.75f..326.25f -> "СЗ"
+            degrees in 326.25f..348.75f -> "ССЗ"
+            else -> "—"
+        }
+    }
+
+    private fun getWindDescription(speed: Float): String {
+        return when {
+            speed < 1 -> "Штиль"
+            speed < 4 -> "Лёгкий ветер"
+            speed < 8 -> "Слабый ветер"
+            speed < 12 -> "Умеренный ветер"
+            speed < 16 -> "Свежий ветер"
+            speed < 20 -> "Сильный ветер"
+            speed < 24 -> "Крепкий ветер"
+            speed < 28 -> "Очень крепкий ветер"
+            speed < 32 -> "Шторм"
+            else -> "Сильный шторм"
+        }
+    }
+
+    private fun initWeatherViews() {
+        tvTemperature = findViewById(R.id.tvTemperature)
+        tvWeatherDesc = findViewById(R.id.tvWeatherDesc)
+        tvFeelsLike = findViewById(R.id.tvFeelsLike)
+    }
+
+    // === ЗАГРУЗКА ПОГОДЫ ===
+    private fun loadCurrentWeather() {
+        lifecycleScope.launch {
+            yandexWeatherRepo.loadWeather("verkhnyaya-pyshma")
+        }
+
+        yandexWeatherRepo.weatherData.observe(this) { data ->
+            updateWeatherUI(data)
+        }
+
+        yandexWeatherRepo.error.observe(this) { error ->
+            if (!error.isNullOrEmpty()) {
+                Log.e("Weather", error)
+                // fallback-значения
+                tvTemperature.text = "−12°"
+                tvWeatherDesc.text = "Облачно"
+                tvFeelsLike.text = "Ощущается как −18°"
+            }
+        }
+    }
+
+    private fun updateWeatherUI(data: com.example.weatherapp.domain.model.WeatherData) {
+        // Обновляем основную погоду
+        tvTemperature.text = data.temperature
+        tvWeatherDesc.text = data.description
+        tvFeelsLike.text = "Ощущается как ${data.feelsLike}"
+
+        // ⭐ Обновляем данные о ветре
+        // Скорость ветра
+        tvWindSpeed.text = data.windSpeed.toInt().toString()
+        tvWindUnit.text = "км/ч"
+
+        // Описание силы ветра (например: "Умеренный ветер")
+        tvWindDescription.text = getWindDescription(data.windSpeed)
+
+        // Направление ветра текстом (например: "СВ")
+        tvWindDirectionText.text = data.windDirectionText
+
+        // Поворот стрелки компаса (в градусах: 0° = север, 90° = восток и т.д.)
+        ivWindDirection.rotation = data.windDirection
+
+        // Обновляем фон под новое описание погоды
+        updateBackground()
+    }
+
+    // === КАРТА ОСАДКОВ (без изменений) ===
 
     // === Исправленная инициализация карты осадков ===
     private fun initPrecipitationViews() {

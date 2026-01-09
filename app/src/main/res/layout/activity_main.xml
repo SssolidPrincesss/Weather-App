@@ -97,7 +97,6 @@
                     android:id="@+id/tvTemperature"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="−12°"
                     android:textSize="48sp"
                     android:textStyle="bold"
                     android:textColor="@android:color/white"
@@ -108,7 +107,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:text="Дождь"
                     android:textSize="20sp"
                     android:textColor="@android:color/white"
                     android:fontFamily="sans-serif-medium"
@@ -123,7 +121,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="2dp"
                 android:gravity="end"
-                android:text="Ощущается как −18°"
                 android:textColor="@android:color/white"
                 android:textSize="16sp" />
 
@@ -152,6 +149,15 @@
                         android:textSize="16sp"
                         android:textColor="@android:color/white"
                         android:fontFamily="sans-serif-medium" />
+                    <ImageView
+                        android:id="@+id/ivWeatherTomorow"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_sunny_day"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_marginBottom="8dp"
+                        />
                     <TextView
                         android:id="@+id/tvTemp1"
                         android:layout_width="wrap_content"
@@ -177,6 +183,14 @@
                         android:textSize="16sp"
                         android:textColor="@android:color/white"
                         android:fontFamily="sans-serif-medium" />
+                    <ImageView
+                        android:id="@+id/ivWeatherToday"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_sunny_day"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_marginBottom="8dp" />
                     <TextView
                         android:id="@+id/tvTemp2"
                         android:layout_width="wrap_content"
@@ -202,6 +216,14 @@
                         android:textSize="16sp"
                         android:textColor="@android:color/white"
                         android:fontFamily="sans-serif-medium" />
+                    <ImageView
+                        android:id="@+id/ivWeatherNextday"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_cloudy_day"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_marginBottom="8dp" />
                     <TextView
                         android:id="@+id/tvTemp3"
                         android:layout_width="wrap_content"
@@ -226,6 +248,14 @@
                         android:textSize="16sp"
                         android:textColor="@android:color/white"
                         android:fontFamily="sans-serif-medium" />
+                    <ImageView
+                        android:id="@+id/ivWeatherSecondNextday"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_sunny_day"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_marginBottom="8dp" />
                     <TextView
                         android:id="@+id/tvTemp4"
                         android:layout_width="wrap_content"
@@ -250,6 +280,14 @@
                         android:textSize="16sp"
                         android:textColor="@android:color/white"
                         android:fontFamily="sans-serif-medium" />
+                    <ImageView
+                        android:id="@+id/ivWeatherThirdNextday"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_cloudy_day"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_marginBottom="8dp" />
                     <TextView
                         android:id="@+id/tvTemp5"
                         android:layout_width="wrap_content"
@@ -274,6 +312,14 @@
                         android:textSize="16sp"
                         android:textColor="@android:color/white"
                         android:fontFamily="sans-serif-medium" />
+                    <ImageView
+                        android:id="@+id/ivWeatherFourthNextday"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_sunny_day"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_marginBottom="8dp" />
                     <TextView
                         android:id="@+id/tvTemp6"
                         android:layout_width="wrap_content"
@@ -378,7 +424,7 @@
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_weight="1"
-                    android:layout_height="140dp"
+                    android:layout_height="230dp"
                     android:orientation="vertical"
                     android:background="@drawable/rounded_card_translucent"
                     android:padding="16dp"
@@ -404,10 +450,10 @@
                         <ProgressBar
                             android:id="@+id/pbHumidity"
                             style="?android:attr/progressBarStyleHorizontal"
-                            android:layout_width="60dp"
-                            android:layout_height="30dp"
+                            android:layout_width="100dp"
+                            android:layout_height="50dp"
                             android:rotation="270"
-                            android:progress="70"
+                            android:progress="10"
                             android:max="100"
                             android:indeterminate="false"
                             android:progressDrawable="@drawable/progress_vertical"
@@ -421,8 +467,8 @@
                             android:id="@+id/tvHumidityValue"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="70%"
-                            android:textSize="14sp"
+                            android:text="10%"
+                            android:textSize="20sp"
                             android:textColor="@android:color/white"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
@@ -437,7 +483,7 @@
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_weight="1"
-                    android:layout_height="140dp"
+                    android:layout_height="230dp"
                     android:orientation="vertical"
                     android:background="@drawable/rounded_card_translucent"
                     android:padding="16dp"
@@ -450,14 +496,48 @@
                         android:textSize="14sp"
                         android:textColor="@android:color/white"
                         android:fontFamily="sans-serif-medium"
-                        android:layout_marginBottom="8dp" />
+                        android:layout_marginBottom="2dp" />
 
-                    <!-- Обёртка для ветра -->
+                    <!-- Направление ветра (над компасом) -->
+                    <TextView
+                        android:id="@+id/tvWindDirectionText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="СВ"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:layout_marginBottom="4dp" />
+
+                    <!-- Обёртка для компаса -->
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_weight="1"
                         android:gravity="center">
+
+                        <!-- Круговой компас -->
+                        <ImageView
+                            android:id="@+id/ivCompassRing"
+                            android:layout_width="120dp"
+                            android:layout_height="120dp"
+                            android:src="@drawable/compass_ring"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent" />
+
+                        <!-- Направления компаса -->
+                        <ImageView
+                            android:id="@+id/ivCompassDirections"
+                            android:layout_width="120dp"
+                            android:layout_height="120dp"
+                            android:src="@drawable/compass_directions"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent" />
 
                         <!-- Стрелка ветра -->
                         <ImageView
@@ -471,20 +551,55 @@
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintEnd_toEndOf="parent" />
 
-                        <!-- Сила ветра -->
-                        <TextView
-                            android:id="@+id/tvWindSpeed"
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    <!-- Блок скорости и описания -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:layout_marginTop="2dp">
+
+                        <!-- Скорость ветра -->
+                        <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="5 м/с"
-                            android:textSize="14sp"
-                            android:textColor="@android:color/white"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            android:layout_marginBottom="8dp" />
+                            android:orientation="horizontal"
+                            android:gravity="center">
 
-                    </androidx.constraintlayout.widget.ConstraintLayout>
+                            <TextView
+                                android:id="@+id/tvWindSpeed"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textSize="20sp"
+                                android:textColor="@android:color/white"
+                                android:fontFamily="sans-serif-black"
+                                android:text="10" />
+
+                            <TextView
+                                android:id="@+id/tvWindUnit"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textSize="14sp"
+                                android:textColor="@android:color/white"
+                                android:fontFamily="sans-serif-medium"
+                                android:text="км/ч"
+                                android:layout_marginStart="2dp" />
+                        </LinearLayout>
+
+                        <!-- Описание силы ветра -->
+                        <TextView
+                            android:id="@+id/tvWindDescription"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Умеренный ветер"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:fontFamily="sans-serif"
+                            android:layout_marginTop="2dp" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 
