@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Облако -->
+    <path
+        android:pathData="M6,10 C8,7 12,7 14,9 C16,7 20,7 22,10 C23,12 23,14 22,16 C20,19 16,21 14,19 C12,21 8,19 6,16 C5,14 5,12 6,10 Z"
+        android:fillColor="#80D0D0D0"/>
+
+    <!-- Волнистые линии тумана -->
+    <path
+        android:pathData="M4,14 Q8,12 12,13 Q16,14 20,13 Q22,12 24,14"
+        android:strokeWidth="2"
+        android:strokeColor="#60FFFFFF"
+        android:fillColor="#00000000"/>
+
+</vector>

@@ -33,22 +33,31 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.weatherapp.R
 import com.example.weatherapp.data.repository.RussianWeatherRepository
-import com.example.weatherapp.data.repository.YandexWeatherRepository
 import com.example.weatherapp.domain.model.HourlyWeather
 import com.example.weatherapp.domain.model.TimeOfDay
 import com.example.weatherapp.domain.model.WeatherCondition
 import com.example.weatherapp.utils.TimeUtils
 import android.net.Uri
 import androidx.lifecycle.lifecycleScope
+import com.example.weatherapp.data.repository.WeatherRepository
+import com.example.weatherapp.domain.model.DailyForecastItem
 import kotlinx.coroutines.launch
 
+// Новые импорты для 7-дневного прогноза
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var weatherRepo: WeatherRepository
 
     // === Погода ===
     private lateinit var tvTemperature: TextView
     private lateinit var tvWeatherDesc: TextView
     private lateinit var tvFeelsLike: TextView
-    private val yandexWeatherRepo = YandexWeatherRepository()
+    //private val yandexWeatherRepo = YandexWeatherRepository()
 
     // === Карта осадков ===
     private lateinit var ivPrecipitationMap: ImageView
@@ -77,6 +86,18 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvWindDescription: TextView
     private lateinit var tvWindDirectionText: TextView
 
+
+    //Влажность
+    private lateinit var pbHumidity: ProgressBar
+    private lateinit var tvHumidityValue: TextView
+
+    //Восход / закат
+    private lateinit var tvSunrise: TextView
+    private lateinit var tvSunset: TextView
+
+    //прогноз на 7 дней
+    private lateinit var forecastViews: List<Triple<TextView, ImageView, TextView>>
+
     private val timeChangedReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
@@ -93,24 +114,33 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // ✅ Инициализация репозитория
+        weatherRepo = WeatherRepository()
+
         // 1. Обязательные инициализации
         initViews()
         initWeatherViews()
+        initWindViews()
+        initPrecipitationViews()
 
-        // 2. Инициализация вьюшек карты ДО загрузки
-        initPrecipitationViews()  // ✅ Ключевое изменение
+        // 2. Загрузка данных
+        setupRecyclerView()
+        initializeMockData()
 
-        // 3. Загрузка данных
+        // ✅ Теперь репозиторий инициализирован
+        loadCurrentWeather()
+        loadPrecipitationMap()
+
+        //Прогноз на 7 дней
+        initForecastViews() // ⭐ КЛЮЧЕВОЕ: инициализируем ДО загрузки данных
+
+        // 2. Загрузка данных
         setupRecyclerView()
         initializeMockData()
         loadCurrentWeather()
-        loadPrecipitationMap()    // ✅ Теперь безопасно
+        loadPrecipitationMap()
 
-        // Инициализация ветра
-        initWindViews()
 
-        // Установка данных ветра (в реальном приложении эти данные будут приходить из API)
-        setWindData(direction = 45f, speed = 10f) // 45° - северо-восток, 13 км/ч
 
         updateBackground()
     }
@@ -118,6 +148,22 @@ class MainActivity : AppCompatActivity() {
     private fun initViews() {
         ivBackground = findViewById(R.id.ivBackground)
         findViewById<TextView>(R.id.tvLocationName).text = "Верхняя Пышма"
+        pbHumidity = findViewById(R.id.pbHumidity)
+        tvHumidityValue = findViewById(R.id.tvHumidityValue)
+        tvSunrise = findViewById(R.id.tvSunrise)
+        tvSunset = findViewById(R.id.tvSunset)
+    }
+
+    private fun initForecastViews() {
+        forecastViews = listOf(
+            Triple(findViewById(R.id.tvDay1), findViewById(R.id.ivWeather1), findViewById(R.id.tvTemp1)),
+            Triple(findViewById(R.id.tvDay2), findViewById(R.id.ivWeather2), findViewById(R.id.tvTemp2)),
+            Triple(findViewById(R.id.tvDay3), findViewById(R.id.ivWeather3), findViewById(R.id.tvTemp3)),
+            Triple(findViewById(R.id.tvDay4), findViewById(R.id.ivWeather4), findViewById(R.id.tvTemp4)),
+            Triple(findViewById(R.id.tvDay5), findViewById(R.id.ivWeather5), findViewById(R.id.tvTemp5)),
+            Triple(findViewById(R.id.tvDay6), findViewById(R.id.ivWeather6), findViewById(R.id.tvTemp6)),
+            Triple(findViewById(R.id.tvDay7), findViewById(R.id.ivWeather7), findViewById(R.id.tvTemp7))
+        )
     }
 
     private fun initWindViews() {
@@ -128,55 +174,21 @@ class MainActivity : AppCompatActivity() {
         tvWindDirectionText = findViewById(R.id.tvWindDirectionText)
     }
 
-    private fun setWindData(direction: Float, speed: Float, directionText: String = "—") {
-        // Скорость
-        tvWindSpeed.text = speed.toInt().toString()
-        tvWindUnit.text = "км/ч"
 
-        // Описание силы
-        tvWindDescription.text = getWindDescription(speed)
-
-        // Направление текстом
-        tvWindDirectionText.text = directionText
-
-        // Поворот стрелки
-        ivWindDirection.rotation = direction
-    }
-
-    private fun getWindDirectionText(degrees: Float): String {
+    private fun getWindDescription(speed: Float): String { // speed в м/с
         return when {
-            degrees in 348.75f..360f || degrees in 0f..11.25f -> "С"
-            degrees in 11.25f..33.75f -> "ССВ"
-            degrees in 33.75f..56.25f -> "СВ"
-            degrees in 56.25f..78.75f -> "ВСВ"
-            degrees in 78.75f..101.25f -> "В"
-            degrees in 101.25f..123.75f -> "ВЮВ"
-            degrees in 123.75f..146.25f -> "ЮВ"
-            degrees in 146.25f..168.75f -> "ЮЮВ"
-            degrees in 168.75f..191.25f -> "Ю"
-            degrees in 191.25f..213.75f -> "ЮЮЗ"
-            degrees in 213.75f..236.25f -> "ЮЗ"
-            degrees in 236.25f..258.75f -> "ЗЮЗ"
-            degrees in 258.75f..281.25f -> "З"
-            degrees in 281.25f..303.75f -> "ЗСЗ"
-            degrees in 303.75f..326.25f -> "СЗ"
-            degrees in 326.25f..348.75f -> "ССЗ"
-            else -> "—"
-        }
-    }
-
-    private fun getWindDescription(speed: Float): String {
-        return when {
-            speed < 1 -> "Штиль"
-            speed < 4 -> "Лёгкий ветер"
-            speed < 8 -> "Слабый ветер"
-            speed < 12 -> "Умеренный ветер"
-            speed < 16 -> "Свежий ветер"
-            speed < 20 -> "Сильный ветер"
-            speed < 24 -> "Крепкий ветер"
-            speed < 28 -> "Очень крепкий ветер"
-            speed < 32 -> "Шторм"
-            else -> "Сильный шторм"
+            speed < 0.3f -> "Штиль"
+            speed < 1.6f -> "Тихий"           // 1 м/с = 3.6 км/ч
+            speed < 3.4f -> "Лёгкий"
+            speed < 5.5f -> "Слабый"
+            speed < 8.0f -> "Умеренный"
+            speed < 10.8f -> "Свежий"
+            speed < 13.9f -> "Сильный"
+            speed < 17.2f -> "Крепкий"
+            speed < 20.8f -> "Очень крепкий"
+            speed < 24.5f -> "Шторм"
+            speed < 28.5f -> "Сильный шторм"
+            else -> "Ураган"
         }
     }
 
@@ -188,21 +200,22 @@ class MainActivity : AppCompatActivity() {
 
     // === ЗАГРУЗКА ПОГОДЫ ===
     private fun loadCurrentWeather() {
+        Log.d("Weather", "Starting weather load...")
+
         lifecycleScope.launch {
-            yandexWeatherRepo.loadWeather("verkhnyaya-pyshma")
+            Log.d("Weather", "Launching coroutine...")
+            weatherRepo.loadWeather(56.9474, 60.5707)
         }
 
-        yandexWeatherRepo.weatherData.observe(this) { data ->
+        weatherRepo.weatherData.observe(this) { data ->
+            Log.d("Weather", "Weather data received: $data")
             updateWeatherUI(data)
         }
 
-        yandexWeatherRepo.error.observe(this) { error ->
+        weatherRepo.error.observe(this) { error ->
             if (!error.isNullOrEmpty()) {
-                Log.e("Weather", error)
-                // fallback-значения
-                tvTemperature.text = "−12°"
-                tvWeatherDesc.text = "Облачно"
-                tvFeelsLike.text = "Ощущается как −18°"
+                Log.e("Weather", "Error: $error")
+
             }
         }
     }
@@ -213,10 +226,17 @@ class MainActivity : AppCompatActivity() {
         tvWeatherDesc.text = data.description
         tvFeelsLike.text = "Ощущается как ${data.feelsLike}"
 
+        // обновляем восход / закат
+        tvSunrise.text = data.sunrise
+        tvSunset.text = data.sunset
+
+        // ⭐ Обновляем влажность
+        updateHumidityUI(data.humidity)
+
         // ⭐ Обновляем данные о ветре
         // Скорость ветра
-        tvWindSpeed.text = data.windSpeed.toInt().toString()
-        tvWindUnit.text = "км/ч"
+        tvWindSpeed.text = String.format("%.1f", data.windSpeed) // например: "2,3"
+        tvWindUnit.text = "м/с"
 
         // Описание силы ветра (например: "Умеренный ветер")
         tvWindDescription.text = getWindDescription(data.windSpeed)
@@ -227,13 +247,44 @@ class MainActivity : AppCompatActivity() {
         // Поворот стрелки компаса (в градусах: 0° = север, 90° = восток и т.д.)
         ivWindDirection.rotation = data.windDirection
 
+        // ⭐ Обновляем прогноз на 7 дней
+        updateForecastUI(data.dailyForecast)
         // Обновляем фон под новое описание погоды
         updateBackground()
     }
 
-    // === КАРТА ОСАДКОВ (без изменений) ===
+    private fun updateForecastUI(forecast: List<DailyForecastItem>) {
+        forecastViews.forEachIndexed { index, (dayView, weatherView, tempView) ->
+            if (index < forecast.size) {
+                val item = forecast[index]
+                dayView.text = item.dayOfWeek
+                // ✅ ИСПРАВЛЕНО: сначала дневная (макс), потом ночная (мин)
+                tempView.text = "${item.tempMax}° / ${item.tempMin}°"
+                weatherView.setImageResource(getWeatherIcon(item.weatherCode))
+            }
+        }
+    }
 
-    // === Исправленная инициализация карты осадков ===
+    // ⭐ Преобразуем weather code в иконку
+    private fun getWeatherIcon(weatherCode: Int): Int {
+        return when {
+            weatherCode == 0 -> R.drawable.ic_sunny_day // Ясно
+            weatherCode in 1..3 -> R.drawable.ic_cloudy_day // Облачно
+            weatherCode in 45..48 -> R.drawable.ic_foggy // Туман
+            weatherCode in 51..57 -> R.drawable.ic_rainy// Морось
+            weatherCode in 61..67 -> R.drawable.ic_rainy // Дождь
+            weatherCode in 71..77 -> R.drawable.ic_snowy // Снег
+            weatherCode in 80..82 -> R.drawable.ic_rainy // Ливень
+            else -> R.drawable.ic_cloudy_day
+        }
+    }
+
+    private fun updateHumidityUI(humidity: Int) {
+        pbHumidity.progress = humidity
+        tvHumidityValue.text = "${humidity}%"
+    }
+
+    // === КАРТА ОСАДКОВ (без изменений) ===
     private fun initPrecipitationViews() {
         try {
             // ⭐ ВАЖНО: Проверяем, что вьюшки существуют в разметке
