@@ -1,10 +1,5 @@
 package com.example.weatherapp.ui.main
 
-/*
-точка входа приложения и пультик для  остальных классов
-так же частично отвечает за связь с API
- */
-
 import android.Manifest
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -14,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.location.Geocoder
 import android.location.Location
 import android.location.LocationManager
 import android.os.Bundle
@@ -25,47 +21,41 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.weatherapp.R
+import com.example.weatherapp.data.model.LocationData
 import com.example.weatherapp.data.repository.RussianWeatherRepository
+import com.example.weatherapp.data.repository.WeatherRepository
+import com.example.weatherapp.domain.model.DailyForecastItem
 import com.example.weatherapp.domain.model.HourlyWeather
 import com.example.weatherapp.domain.model.TimeOfDay
 import com.example.weatherapp.domain.model.WeatherCondition
+import com.example.weatherapp.utils.GeoUtils
 import com.example.weatherapp.utils.TimeUtils
 import android.net.Uri
 import androidx.lifecycle.lifecycleScope
-import com.example.weatherapp.data.repository.WeatherRepository
-import com.example.weatherapp.domain.model.DailyForecastItem
+import com.example.weatherapp.utils.LocationUtils
 import kotlinx.coroutines.launch
-
-// Новые импорты для 7-дневного прогноза
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var weatherRepo: WeatherRepository
+    private lateinit var russianWeatherRepo: RussianWeatherRepository
 
     // === Погода ===
     private lateinit var tvTemperature: TextView
     private lateinit var tvWeatherDesc: TextView
     private lateinit var tvFeelsLike: TextView
-    //private val yandexWeatherRepo = YandexWeatherRepository()
 
     // === Карта осадков ===
     private lateinit var ivPrecipitationMap: ImageView
     private lateinit var pbPrecipitationLoading: ProgressBar
     private lateinit var tvPrecipitationError: TextView
     private lateinit var flPrecipitationContainer: FrameLayout
-    private var currentLocation: Location? = null
-    private val weatherRepository = RussianWeatherRepository()
 
     // === Основные компоненты ===
     private lateinit var adapter: HourlyForecastAdapter
@@ -85,7 +75,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvWindUnit: TextView
     private lateinit var tvWindDescription: TextView
     private lateinit var tvWindDirectionText: TextView
-
 
     //Влажность
     private lateinit var pbHumidity: ProgressBar
@@ -114,40 +103,74 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // ✅ Инициализация репозитория
+        // Инициализация репозиториев
         weatherRepo = WeatherRepository()
+        russianWeatherRepo = RussianWeatherRepository()
 
-        // 1. Обязательные инициализации
+        // Инициализация UI
         initViews()
         initWeatherViews()
         initWindViews()
         initPrecipitationViews()
-
-        // 2. Загрузка данных
+        initForecastViews()
         setupRecyclerView()
-        initializeMockData()
 
-        // ✅ Теперь репозиторий инициализирован
-        loadCurrentWeather()
-        loadPrecipitationMap()
-
-        //Прогноз на 7 дней
-        initForecastViews() // ⭐ КЛЮЧЕВОЕ: инициализируем ДО загрузки данных
-
-        // 2. Загрузка данных
-        setupRecyclerView()
-        initializeMockData()
-        loadCurrentWeather()
-        loadPrecipitationMap()
-
-
-
-        updateBackground()
+        // Загрузка данных с автоматическим определением местоположения
+        loadWeatherWithAutoLocation()
     }
+
+    // Используй в нужном месте:
+    private fun loadWeatherWithAutoLocation() {
+        lifecycleScope.launch {
+            try {
+                val location = getCurrentLocation()
+                val lat = location?.latitude ?: 56.9474
+                val lon = location?.longitude ?: 60.5707
+
+                val timezone = GeoUtils.getTimeZoneByCoordinates(lat, lon)
+                // ⭐ ИСПОЛЬЗУЕМ УТИЛИТУ:
+                val locationName = LocationUtils.getCityName(this as Context, lat, lon)
+
+                val locationData = LocationData(location ?: createDefaultLocation(), timezone, locationName)
+                findViewById<TextView>(R.id.tvLocationName).text = locationName
+
+                // Обновляем название локации
+                findViewById<TextView>(R.id.tvLocationName).text = locationName
+
+                // Загружаем все данные
+                weatherRepo.loadWeatherWithAutoLocation(locationData)
+                loadHourlyForecast(locationData)
+                loadPrecipitationMap(lat, lon)
+
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error loading weather with auto location", e)
+                // Fallback на Верхнюю Пышму
+                loadFallbackWeather()
+            }
+        }
+    }
+
+    private suspend fun loadFallbackWeather() {
+        val defaultLocation = createDefaultLocation()
+        val locationData = LocationData(defaultLocation, "Asia/Yekaterinburg", "Верхняя Пышма")
+
+        weatherRepo.loadWeatherWithAutoLocation(locationData)
+        loadHourlyForecast(locationData)
+        loadPrecipitationMap(56.9474, 60.5707)
+        findViewById<TextView>(R.id.tvLocationName).text = "Верхняя Пышма"
+    }
+
+    private fun createDefaultLocation(): Location {
+        return Location("default").apply {
+            latitude = 56.9474
+            longitude = 60.5707
+        }
+    }
+
+
 
     private fun initViews() {
         ivBackground = findViewById(R.id.ivBackground)
-        findViewById<TextView>(R.id.tvLocationName).text = "Верхняя Пышма"
         pbHumidity = findViewById(R.id.pbHumidity)
         tvHumidityValue = findViewById(R.id.tvHumidityValue)
         tvSunrise = findViewById(R.id.tvSunrise)
@@ -174,11 +197,10 @@ class MainActivity : AppCompatActivity() {
         tvWindDirectionText = findViewById(R.id.tvWindDirectionText)
     }
 
-
-    private fun getWindDescription(speed: Float): String { // speed в м/с
+    private fun getWindDescription(speed: Float): String {
         return when {
             speed < 0.3f -> "Штиль"
-            speed < 1.6f -> "Тихий"           // 1 м/с = 3.6 км/ч
+            speed < 1.6f -> "Тихий"
             speed < 3.4f -> "Лёгкий"
             speed < 5.5f -> "Слабый"
             speed < 8.0f -> "Умеренный"
@@ -198,15 +220,31 @@ class MainActivity : AppCompatActivity() {
         tvFeelsLike = findViewById(R.id.tvFeelsLike)
     }
 
-    // === ЗАГРУЗКА ПОГОДЫ ===
-    private fun loadCurrentWeather() {
-        Log.d("Weather", "Starting weather load...")
+    private fun setDefaultWeatherValues() {
+        tvTemperature.text = "−12°"
+        tvWeatherDesc.text = "Облачно"
+        tvFeelsLike.text = "Ощущается как −18°"
+        tvSunrise.text = "09:30"
+        tvSunset.text = "16:30"
+        setDefaultWindValues()
+        setDefaultHumidityValues()
+    }
 
-        lifecycleScope.launch {
-            Log.d("Weather", "Launching coroutine...")
-            weatherRepo.loadWeather(56.9474, 60.5707)
-        }
+    private fun setDefaultWindValues() {
+        tvWindSpeed.text = "2.3"
+        tvWindUnit.text = "м/с"
+        tvWindDescription.text = "Слабый"
+        tvWindDirectionText.text = "ЮЗ"
+        ivWindDirection.rotation = 225f
+    }
 
+    private fun setDefaultHumidityValues() {
+        pbHumidity.progress = 80
+        tvHumidityValue.text = "80%"
+    }
+
+    // === НАБЛЮДЕНИЕ ЗА ДАННЫМИ ===
+    private fun observeWeatherData() {
         weatherRepo.weatherData.observe(this) { data ->
             Log.d("Weather", "Weather data received: $data")
             updateWeatherUI(data)
@@ -215,42 +253,33 @@ class MainActivity : AppCompatActivity() {
         weatherRepo.error.observe(this) { error ->
             if (!error.isNullOrEmpty()) {
                 Log.e("Weather", "Error: $error")
-
+                setDefaultWeatherValues()
             }
         }
     }
 
     private fun updateWeatherUI(data: com.example.weatherapp.domain.model.WeatherData) {
-        // Обновляем основную погоду
         tvTemperature.text = data.temperature
         tvWeatherDesc.text = data.description
         tvFeelsLike.text = "Ощущается как ${data.feelsLike}"
-
-        // обновляем восход / закат
         tvSunrise.text = data.sunrise
         tvSunset.text = data.sunset
 
-        // ⭐ Обновляем влажность
         updateHumidityUI(data.humidity)
+        updateWindUI(data)
+        updateForecastUI(data.dailyForecast)
+        updateBackground()
+    }
 
-        // ⭐ Обновляем данные о ветре
-        // Скорость ветра
-        tvWindSpeed.text = String.format("%.1f", data.windSpeed) // например: "2,3"
+    private fun updateWindUI(data: com.example.weatherapp.domain.model.WeatherData) {
+        tvWindSpeed.text = String.format("%.1f", data.windSpeed)
         tvWindUnit.text = "м/с"
-
-        // Описание силы ветра (например: "Умеренный ветер")
         tvWindDescription.text = getWindDescription(data.windSpeed)
-
-        // Направление ветра текстом (например: "СВ")
         tvWindDirectionText.text = data.windDirectionText
 
-        // Поворот стрелки компаса (в градусах: 0° = север, 90° = восток и т.д.)
-        ivWindDirection.rotation = data.windDirection
-
-        // ⭐ Обновляем прогноз на 7 дней
-        updateForecastUI(data.dailyForecast)
-        // Обновляем фон под новое описание погоды
-        updateBackground()
+        // Правильный поворот стрелки (0° = север → 270° в Android)
+        val rotation = (data.windDirection + 270f) % 360f
+        ivWindDirection.rotation = rotation
     }
 
     private fun updateForecastUI(forecast: List<DailyForecastItem>) {
@@ -258,23 +287,21 @@ class MainActivity : AppCompatActivity() {
             if (index < forecast.size) {
                 val item = forecast[index]
                 dayView.text = item.dayOfWeek
-                // ✅ ИСПРАВЛЕНО: сначала дневная (макс), потом ночная (мин)
                 tempView.text = "${item.tempMax}° / ${item.tempMin}°"
                 weatherView.setImageResource(getWeatherIcon(item.weatherCode))
             }
         }
     }
 
-    // ⭐ Преобразуем weather code в иконку
     private fun getWeatherIcon(weatherCode: Int): Int {
         return when {
-            weatherCode == 0 -> R.drawable.ic_sunny_day // Ясно
-            weatherCode in 1..3 -> R.drawable.ic_cloudy_day // Облачно
-            weatherCode in 45..48 -> R.drawable.ic_foggy // Туман
-            weatherCode in 51..57 -> R.drawable.ic_rainy// Морось
-            weatherCode in 61..67 -> R.drawable.ic_rainy // Дождь
-            weatherCode in 71..77 -> R.drawable.ic_snowy // Снег
-            weatherCode in 80..82 -> R.drawable.ic_rainy // Ливень
+            weatherCode == 0 -> R.drawable.ic_sunny_day
+            weatherCode in 1..3 -> R.drawable.ic_cloudy_day
+            weatherCode in 45..48 -> R.drawable.ic_foggy
+            weatherCode in 51..57 -> R.drawable.ic_rainy
+            weatherCode in 61..67 -> R.drawable.ic_rainy
+            weatherCode in 71..77 -> R.drawable.ic_snowy
+            weatherCode in 80..82 -> R.drawable.ic_rainy
             else -> R.drawable.ic_cloudy_day
         }
     }
@@ -284,50 +311,36 @@ class MainActivity : AppCompatActivity() {
         tvHumidityValue.text = "${humidity}%"
     }
 
-    // === КАРТА ОСАДКОВ (без изменений) ===
+    // === КАРТА ОСАДКОВ ===
     private fun initPrecipitationViews() {
         try {
-            // ⭐ ВАЖНО: Проверяем, что вьюшки существуют в разметке
             ivPrecipitationMap = findViewById(R.id.ivPrecipitationMap)
             pbPrecipitationLoading = findViewById(R.id.pbPrecipitationLoading)
             tvPrecipitationError = findViewById(R.id.tvPrecipitationError)
             flPrecipitationContainer = findViewById(R.id.flPrecipitationContainer)
 
-            // Обработчик клика по карте осадков
             flPrecipitationContainer.setOnClickListener {
                 openFullPrecipitationMap()
             }
         } catch (e: Exception) {
             Log.e("MainActivity", "Error initializing precipitation views: ${e.message}")
-            // Если вьюшки не найдены, показываем ошибку
             findViewById<TextView>(R.id.tvPrecipitationError)?.text = "Карта осадков недоступна"
             findViewById<TextView>(R.id.tvPrecipitationError)?.visibility = View.VISIBLE
         }
     }
 
-    private fun loadPrecipitationMap() {
-        // Получаем текущую геопозицию
-        val location = getCurrentLocation()
-        currentLocation = location
-        val lat = location?.latitude ?: 56.9474  // Верхняя Пышма
-        val lon = location?.longitude ?: 60.5707
-
+    private fun loadPrecipitationMap(lat: Double, lon: Double) {
         Log.d("MainActivity", "Loading precipitation map for lat=$lat, lon=$lon")
 
-        // Запускаем в IO scope
         lifecycleScope.launch {
             try {
-                weatherRepository.loadPrecipitationMap(lat, lon)
+                russianWeatherRepo.loadPrecipitationMap(lat, lon)
             } catch (e: Exception) {
                 Log.e("MainActivity", "Error in loadPrecipitationMap: ${e.message}", e)
-                // ⭐ Не вызывай postValue() напрямую — это защищённый метод!
-                // Вместо этого используй уже существующий механизм через _error.postValue(...)
             }
         }
 
-        // Наблюдаем за изменениями
-        weatherRepository.precipitationMap.observe(this) { bitmap ->
-            Log.d("MainActivity", "Precipitation map received: ${bitmap != null}")
+        russianWeatherRepo.precipitationMap.observe(this) { bitmap ->
             if (bitmap != null) {
                 ivPrecipitationMap.setImageBitmap(bitmap)
                 pbPrecipitationLoading.visibility = View.GONE
@@ -338,7 +351,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        weatherRepository.error.observe(this) { error ->
+        russianWeatherRepo.error.observe(this) { error ->
             if (!error.isNullOrEmpty()) {
                 Log.e("MainActivity", "Map error: $error")
                 tvPrecipitationError.text = error
@@ -348,78 +361,74 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
-
-    private fun getCurrentLocation(): Location? {
-        try {
-            val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-
-            // Проверяем разрешения
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                // Сначала пробуем GPS
-                val lastGps = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                if (lastGps != null) {
-                    Log.d("Location", "GPS location found")
-                    return lastGps
-                }
-
-                // Затем сетевые провайдеры
-                val lastNetwork = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                if (lastNetwork != null) {
-                    Log.d("Location", "Network location found")
-                    return lastNetwork
-                }
-            } else {
-                // Запрашиваем разрешение
-                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1001)
-            }
-        } catch (e: Exception) {
-            Log.e("Location", "Error getting location: ${e.message}")
-        }
-
-        // Дефолтные координаты (Верхняя Пышма)
-        return Location("default").apply {
-            latitude = 56.9474
-            longitude = 60.5707
-        }
-    }
-
-    private fun openFullPrecipitationMap() {
-        // ⭐ Открываем карту Gismeteo (работает в РФ)
-        val fullMapUrl = "https://yandex.ru/pogoda/ru/maps/nowcast/"
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(fullMapUrl))
-        startActivity(intent)
-    }
-
-    // === Остальные методы (без изменений) ===
+    // === ПОЧАСОВКА ===
     private fun setupRecyclerView() {
         val rv = findViewById<RecyclerView>(R.id.rvHourlyForecast)
         adapter = HourlyForecastAdapter()
         rv.adapter = adapter
     }
 
-    private fun initializeMockData() {
-        val mockData = listOf(
-            HourlyWeather("21:00", R.drawable.ic_cloudy_night, -28.0, 3),
-            HourlyWeather("22:00", R.drawable.ic_clear_night, -15.0, 14),
-            HourlyWeather("23:00", R.drawable.ic_clear_night, -28.0, 5),
-            HourlyWeather("00:00", R.drawable.ic_rainy, -18.0, 24),
-            HourlyWeather("01:00", R.drawable.ic_rainy, -10.0, 17),
-            HourlyWeather("02:00", R.drawable.ic_sunny_day, -23.0, 31),
-            HourlyWeather("03:00", R.drawable.ic_sunny_day, -30.0, 24),
-            HourlyWeather("04:00", R.drawable.ic_cloudy_day, -12.0, 28),
-            HourlyWeather("05:00", R.drawable.ic_sunny_day, 5.0, 19),
-            HourlyWeather("06:00", R.drawable.ic_snowy, -18.0, 24),
-            HourlyWeather("07:00", R.drawable.ic_cloudy_day, -10.0, 17),
-            HourlyWeather("08:00", R.drawable.ic_sunny_day, -23.0, 31),
-            HourlyWeather("09:00", R.drawable.ic_sunny_day, -30.0, 24)
-        )
+    private fun loadHourlyForecast(locationData: LocationData) {
+        lifecycleScope.launch {
+            try {
+                val hourlyData = weatherRepo.loadHourlyForecastWithAutoLocation(locationData)
+                adapter.setData(hourlyData)
+                findViewById<RecyclerView>(R.id.rvHourlyForecast)
+                    .addItemDecoration(TemperatureLineDecorator(hourlyData.map { it.temperature }))
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error loading hourly forecast", e)
+                initializeMockData()
+            }
+        }
+    }
 
+    private fun initializeMockData() {
+        val mockData = weatherRepo.getMockHourlyData()
         adapter.setData(mockData)
         findViewById<RecyclerView>(R.id.rvHourlyForecast)
             .addItemDecoration(TemperatureLineDecorator(mockData.map { it.temperature }))
     }
 
+    // === ГЕОПОЗИЦИЯ ===
+    private fun getCurrentLocation(): Location? {
+        try {
+            val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                val lastGps = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                if (lastGps != null && isLocationValid(lastGps)) {
+                    return lastGps
+                }
+
+                val lastNetwork = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                if (lastNetwork != null && isLocationValid(lastNetwork)) {
+                    return lastNetwork
+                }
+            } else {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1001)
+            }
+        } catch (e: Exception) {
+            Log.e("Location", "Error getting location: ${e.message}")
+        }
+
+        return createDefaultLocation()
+    }
+
+    private fun isLocationValid(location: Location): Boolean {
+        val currentTime = System.currentTimeMillis()
+        val locationTime = location.time
+        val timeDiff = currentTime - locationTime
+        return timeDiff < 3600000 && location.accuracy < 1000f
+    }
+
+    private fun openFullPrecipitationMap() {
+        // ⭐ ИСПРАВЛЕНО: Удалены лишние пробелы в URL
+        val fullMapUrl = "https://yandex.ru/pogoda/ru/maps/nowcast/"
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(fullMapUrl))
+        startActivity(intent)
+    }
+
+    // === ФОН ===
     private fun updateBackground() {
         val weatherDesc = tvWeatherDesc.text.toString()
         val weatherCondition = parseWeatherCondition(weatherDesc)
@@ -493,6 +502,7 @@ class MainActivity : AppCompatActivity() {
         })
         timeUpdateHandler = Handler(Looper.getMainLooper())
         timeUpdateHandler?.post(timeUpdateRunnable)
+        observeWeatherData() // ⭐ Начинаем наблюдение при возобновлении
     }
 
     override fun onPause() {
@@ -502,7 +512,6 @@ class MainActivity : AppCompatActivity() {
         timeUpdateHandler = null
     }
 
-    // Обработка результата запроса разрешений
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -510,8 +519,7 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 1001 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            // Повторная загрузка карты после получения разрешения
-            loadPrecipitationMap()
+            loadWeatherWithAutoLocation()
         }
     }
 }

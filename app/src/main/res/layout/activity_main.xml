@@ -151,23 +151,29 @@
                         android:textColor="@android:color/white"
                         android:fontFamily="sans-serif-medium"
                         android:layout_gravity="center_vertical" />
-                    <ImageView
-                        android:id="@+id/ivWeather1"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@drawable/ic_sunny_day"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginEnd="8dp"
-                        android:layout_marginBottom="4dp"
-                        android:layout_gravity="center_vertical" />
-                    <TextView
-                        android:id="@+id/tvTemp1"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="−15° / −7°"
-                        android:textSize="16sp"
-                        android:textColor="@android:color/white"
-                        android:layout_gravity="center_vertical" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:id="@+id/ivWeather1"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_sunny_day"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_marginBottom="4dp"
+                            android:layout_gravity="center_vertical" />
+                        <TextView
+                            android:id="@+id/tvTemp1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="−15° / −7°"
+                            android:textSize="16sp"
+                            android:textColor="@android:color/white"
+                            android:layout_gravity="center_vertical" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <!-- Сегодня -->
@@ -188,23 +194,29 @@
                         android:textColor="@android:color/white"
                         android:fontFamily="sans-serif-medium"
                         android:layout_gravity="center_vertical" />
-                    <ImageView
-                        android:id="@+id/ivWeather2"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@drawable/ic_sunny_day"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginEnd="8dp"
-                        android:layout_marginBottom="4dp"
-                        android:layout_gravity="center_vertical" />
-                    <TextView
-                        android:id="@+id/tvTemp2"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="−12° / −4°"
-                        android:textSize="16sp"
-                        android:textColor="@android:color/white"
-                        android:layout_gravity="center_vertical" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:id="@+id/ivWeather2"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_sunny_day"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_marginBottom="4dp"
+                            android:layout_gravity="center_vertical" />
+                        <TextView
+                            android:id="@+id/tvTemp2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="−12° / −4°"
+                            android:textSize="16sp"
+                            android:textColor="@android:color/white"
+                            android:layout_gravity="center_vertical" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <!-- Завтра -->
@@ -225,23 +237,29 @@
                         android:textColor="@android:color/white"
                         android:fontFamily="sans-serif-medium"
                         android:layout_gravity="center_vertical" />
-                    <ImageView
-                        android:id="@+id/ivWeather3"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@drawable/ic_cloudy_day"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginEnd="8dp"
-                        android:layout_marginBottom="4dp"
-                        android:layout_gravity="center_vertical" />
-                    <TextView
-                        android:id="@+id/tvTemp3"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="−9° / −2°"
-                        android:textSize="16sp"
-                        android:textColor="@android:color/white"
-                        android:layout_gravity="center_vertical" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:id="@+id/ivWeather3"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_cloudy_day"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_marginBottom="4dp"
+                            android:layout_gravity="center_vertical" />
+                        <TextView
+                            android:id="@+id/tvTemp3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="−9° / −2°"
+                            android:textSize="16sp"
+                            android:textColor="@android:color/white"
+                            android:layout_gravity="center_vertical" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <!-- День 4 -->
@@ -262,23 +280,29 @@
                         android:textColor="@android:color/white"
                         android:fontFamily="sans-serif-medium"
                         android:layout_gravity="center_vertical" />
-                    <ImageView
-                        android:id="@+id/ivWeather4"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@drawable/ic_sunny_day"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginEnd="8dp"
-                        android:layout_marginBottom="4dp"
-                        android:layout_gravity="center_vertical" />
-                    <TextView
-                        android:id="@+id/tvTemp4"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="−6° / 0°"
-                        android:textSize="16sp"
-                        android:textColor="@android:color/white"
-                        android:layout_gravity="center_vertical" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:id="@+id/ivWeather4"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_sunny_day"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_marginBottom="4dp"
+                            android:layout_gravity="center_vertical" />
+                        <TextView
+                            android:id="@+id/tvTemp4"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="−6° / 0°"
+                            android:textSize="16sp"
+                            android:textColor="@android:color/white"
+                            android:layout_gravity="center_vertical" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <!-- День 5 -->
@@ -299,23 +323,29 @@
                         android:textColor="@android:color/white"
                         android:fontFamily="sans-serif-medium"
                         android:layout_gravity="center_vertical" />
-                    <ImageView
-                        android:id="@+id/ivWeather5"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@drawable/ic_cloudy_day"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginEnd="8dp"
-                        android:layout_marginBottom="4dp"
-                        android:layout_gravity="center_vertical" />
-                    <TextView
-                        android:id="@+id/tvTemp5"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="−4° / 2°"
-                        android:textSize="16sp"
-                        android:textColor="@android:color/white"
-                        android:layout_gravity="center_vertical" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:id="@+id/ivWeather5"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_cloudy_day"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_marginBottom="4dp"
+                            android:layout_gravity="center_vertical" />
+                        <TextView
+                            android:id="@+id/tvTemp5"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="−4° / 2°"
+                            android:textSize="16sp"
+                            android:textColor="@android:color/white"
+                            android:layout_gravity="center_vertical" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <!-- День 6 -->
@@ -336,23 +366,29 @@
                         android:textColor="@android:color/white"
                         android:fontFamily="sans-serif-medium"
                         android:layout_gravity="center_vertical" />
-                    <ImageView
-                        android:id="@+id/ivWeather6"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@drawable/ic_sunny_day"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginEnd="8dp"
-                        android:layout_marginBottom="4dp"
-                        android:layout_gravity="center_vertical" />
-                    <TextView
-                        android:id="@+id/tvTemp6"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="−2° / 4°"
-                        android:textSize="16sp"
-                        android:textColor="@android:color/white"
-                        android:layout_gravity="center_vertical" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:id="@+id/ivWeather6"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_sunny_day"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_marginBottom="4dp"
+                            android:layout_gravity="center_vertical" />
+                        <TextView
+                            android:id="@+id/tvTemp6"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="−2° / 4°"
+                            android:textSize="16sp"
+                            android:textColor="@android:color/white"
+                            android:layout_gravity="center_vertical" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <!-- День 7 -->
@@ -373,23 +409,29 @@
                         android:textColor="@android:color/white"
                         android:fontFamily="sans-serif-medium"
                         android:layout_gravity="center_vertical" />
-                    <ImageView
-                        android:id="@+id/ivWeather7"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@drawable/ic_cloudy_day"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginEnd="8dp"
-                        android:layout_marginBottom="4dp"
-                        android:layout_gravity="center_vertical" />
-                    <TextView
-                        android:id="@+id/tvTemp7"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0° / 6°"
-                        android:textSize="16sp"
-                        android:textColor="@android:color/white"
-                        android:layout_gravity="center_vertical" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <ImageView
+                            android:id="@+id/ivWeather7"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_cloudy_day"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_marginBottom="4dp"
+                            android:layout_gravity="center_vertical" />
+                        <TextView
+                            android:id="@+id/tvTemp7"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0° / 6°"
+                            android:textSize="16sp"
+                            android:textColor="@android:color/white"
+                            android:layout_gravity="center_vertical" />
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
 

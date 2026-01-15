@@ -3,7 +3,9 @@ package com.example.weatherapp.data.repository
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.example.weatherapp.R
 import com.example.weatherapp.domain.model.DailyForecastItem
+import com.example.weatherapp.domain.model.HourlyWeather
 import com.example.weatherapp.domain.model.WeatherData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -13,6 +15,9 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
+import com.example.weatherapp.data.model.LocationData
+
 class WeatherRepository {
 
     private val _weatherData = MutableLiveData<WeatherData>()
@@ -21,13 +26,17 @@ class WeatherRepository {
     private val _error = MutableLiveData<String?>()
     val error: LiveData<String?> = _error
 
-    val timezone = "timezone=Asia/Yekaterinburg"
 
-    suspend fun loadWeather(lat: Double = 56.9474, lon: Double = 60.5707) {
+    // Добавь метод для загрузки с автоматическими параметрами
+    suspend fun loadWeatherWithAutoLocation(locationData: LocationData) {
         _error.postValue(null)
         try {
             val data = withContext(Dispatchers.IO) {
-                fetchWeatherFromOpenMeteo(lat, lon)
+                fetchWeatherFromOpenMeteo(
+                    lat = locationData.location.latitude,
+                    lon = locationData.location.longitude,
+                    timezone = locationData.timezone
+                )
             }
             if (data != null) {
                 _weatherData.postValue(data)
@@ -40,8 +49,9 @@ class WeatherRepository {
         }
     }
 
-    private fun fetchWeatherFromOpenMeteo(lat: Double, lon: Double): WeatherData? {
+    private fun fetchWeatherFromOpenMeteo(lat: Double, lon: Double, timezone: String): WeatherData? {
         return try {
+            // ⭐ Используем переданный часовой пояс
             val url = "https://api.open-meteo.com/v1/forecast?" +
                     "latitude=$lat&longitude=$lon&" +
                     "current_weather=true&" +
@@ -49,7 +59,7 @@ class WeatherRepository {
                     "hourly=relative_humidity_2m&" +
                     "daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,weathercode&" +
                     "forecast_days=8&" +
-                    timezone
+                    "timezone=$timezone" // ⭐ Автоматический часовой пояс
 
             val jsonText = URL(url).readText()
 
@@ -215,12 +225,13 @@ class WeatherRepository {
             val sunsetArray = daily.getJSONArray("sunset")
 
             // Берем данные на сегодня (первый элемент)
-            val sunriseTime = sunriseArray.getString(0) // "2026-01-11T09:34"
-            val sunsetTime = sunsetArray.getString(0)   // "2026-01-11T16:17"
+            val sunriseTime = sunriseArray.getString(0) // "2026-01-14T09:34"
+            val sunsetTime = sunsetArray.getString(0)   // "2026-01-14T16:17"
 
-            // Извлекаем только время HH:MM
-            val sunriseFormatted = sunriseTime.substringAfter("T").substringBefore("+").substring(0, 5)
-            val sunsetFormatted = sunsetTime.substringAfter("T").substringBefore("+").substring(0, 5)
+            // ⭐ ПРОСТО ИЗВЛЕКАЕМ ВРЕМЯ БЕЗ КОНВЕРТАЦИИ
+            // Формат: "2026-01-14T09:34" → "09:34"
+            val sunriseFormatted = sunriseTime.substringAfter("T").substring(0, 5)
+            val sunsetFormatted = sunsetTime.substringAfter("T").substring(0, 5)
 
             Pair(sunriseFormatted, sunsetFormatted)
         } catch (e: Exception) {
@@ -308,4 +319,156 @@ class WeatherRepository {
             else -> "—"
         }
     }
+
+    //виджет-почасовка
+
+    suspend fun loadHourlyForecastWithAutoLocation(locationData: LocationData): List<HourlyWeather> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val url = "https://api.open-meteo.com/v1/forecast?" +
+                        "latitude=${locationData.location.latitude}&" +
+                        "longitude=${locationData.location.longitude}&" +
+                        "hourly=temperature_2m,relative_humidity_2m,weathercode,windspeed_10m&" +
+                        "forecast_days=3&" +
+                        "timezone=${locationData.timezone}"
+
+                val jsonText = URL(url).readText()
+                val jsonObject = JSONObject(jsonText)
+                val hourly = jsonObject.getJSONObject("hourly")
+
+                val timeArray = hourly.getJSONArray("time")
+                val tempArray = hourly.getJSONArray("temperature_2m")
+                val humidityArray = hourly.getJSONArray("relative_humidity_2m")
+                val weatherCodeArray = hourly.getJSONArray("weathercode")
+
+                // Получаем текущее время в формате, который использует Open-Meteo
+                val now = Calendar.getInstance(TimeZone.getTimeZone("Asia/Yekaterinburg"))
+                val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US)
+                val currentTime = formatter.format(now.time) // Формат: "2026-01-13T18:00"
+
+// Ищем индекс текущего часа в массиве
+                var startIndex = -1
+                for (i in 0 until timeArray.length()) {
+                    val timeStr = timeArray.getString(i) // Формат: "2026-01-13T18:00"
+
+                    // ✅ ПРАВИЛЬНОЕ СРАВНЕНИЕ
+                    if (timeStr.startsWith(currentTime.substring(0, 13))) { // Берём первые 13 символов: "2026-01-13T18"
+                        startIndex = i
+                        break
+                    }
+                }
+
+                // Если не нашли текущий час — берём с начала
+                if (startIndex == -1) startIndex = 0
+
+                // Формируем 24 часа начиная с текущего
+                val hourlyData = mutableListOf<HourlyWeather>()
+                for (i in startIndex until minOf(startIndex + 24, timeArray.length())) {
+                    val timeStr = timeArray.getString(i)
+                    val hour = parseHourFromTimestamp(timeStr)
+                    val temperature = tempArray.getDouble(i)
+                    val humidity = humidityArray.getDouble(i).toInt()
+                    val weatherCode = weatherCodeArray.getInt(i)
+                    val weatherIcon = getWeatherIcon(weatherCode, hour)
+
+                    hourlyData.add(
+                        HourlyWeather(
+                            hour = hour,
+                            weatherIcon = weatherIcon,
+                            temperature = temperature,
+                            humidity = humidity
+                        )
+                    )
+                }
+
+                // Если данных меньше 24 — дополняем моками
+                while (hourlyData.size < 24) {
+                    val last = hourlyData.lastOrNull()
+                    hourlyData.add(
+                        HourlyWeather(
+                            hour = getNextHour(hourlyData.last().hour),
+                            weatherIcon = last?.weatherIcon ?: R.drawable.ic_cloudy_day,
+                            temperature = last?.temperature ?: -10.0,
+                            humidity = last?.humidity ?: 80
+                        )
+                    )
+                }
+
+                hourlyData.take(24)
+            } catch (e: Exception) {
+                Log.e("WeatherRepo", "Hourly forecast error", e)
+                // ⭐ ИСПРАВЛЕНИЕ 5: Правильное имя метода (было getMockHourly0Data)
+                getMockHourlyData().take(24)
+            }
+        }
+    }
+
+    // Улучшенный метод определения иконки с учётом ночи/дня
+    private fun getWeatherIcon(weatherCode: Int, hourStr: String): Int {
+        // Определяем, день или ночь (6:00–20:00 = день)
+        val hour = hourStr.split(":")[0].toIntOrNull() ?: 12
+        val isDay = hour in 6..19
+
+        return when (weatherCode) {
+            0 -> if (isDay) R.drawable.ic_sunny_day else R.drawable.ic_clear_night
+            1, 2, 3 -> if (isDay) R.drawable.ic_cloudy_day else R.drawable.ic_cloudy_night
+            45, 48 -> R.drawable.ic_foggy
+            51, 53, 55, 56, 57 -> R.drawable.ic_rainy
+            61, 63, 65, 66, 67 -> R.drawable.ic_rainy
+            71, 73, 75, 77 -> R.drawable.ic_snowy
+            80, 81, 82 -> R.drawable.ic_rainy
+            95, 96, 99 -> R.drawable.ic_rainy
+            else -> if (isDay) R.drawable.ic_cloudy_day else R.drawable.ic_cloudy_night
+        }
+    }
+    // Вспомогательные методы
+    private fun parseHourFromTimestamp(timestamp: String): String {
+        return try {
+            val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US)
+            val date = formatter.parse(timestamp)
+            val hourFormatter = SimpleDateFormat("HH:mm", Locale.US)
+            hourFormatter.format(date)
+        } catch (e: Exception) {
+            Log.e("WeatherRepo", "Error parsing timestamp: $timestamp", e)
+            "00:00"
+        }
+    }
+
+    // Вспомогательный метод для получения следующего часа
+    private fun getNextHour(current: String): String {
+        val parts = current.split(":")
+        var hour = parts[0].toInt()
+        hour = (hour + 1) % 24
+        return String.format("%02d:00", hour)
+    }
+
+    fun getMockHourlyData(): List<HourlyWeather> {
+        return listOf(
+            HourlyWeather("21:00", R.drawable.ic_cloudy_night, -28.0, 3),
+            HourlyWeather("22:00", R.drawable.ic_clear_night, -15.0, 14),
+            HourlyWeather("23:00", R.drawable.ic_clear_night, -28.0, 5),
+            HourlyWeather("00:00", R.drawable.ic_rainy, -18.0, 24),
+            HourlyWeather("01:00", R.drawable.ic_rainy, -10.0, 17),
+            HourlyWeather("02:00", R.drawable.ic_sunny_day, -23.0, 31),
+            HourlyWeather("03:00", R.drawable.ic_sunny_day, -30.0, 24),
+            HourlyWeather("04:00", R.drawable.ic_cloudy_day, -12.0, 28),
+            HourlyWeather("05:00", R.drawable.ic_sunny_day, 5.0, 19),
+            HourlyWeather("06:00", R.drawable.ic_snowy, -18.0, 24),
+            HourlyWeather("07:00", R.drawable.ic_cloudy_day, -10.0, 17),
+            HourlyWeather("08:00", R.drawable.ic_sunny_day, -23.0, 31),
+            HourlyWeather("09:00", R.drawable.ic_sunny_day, -30.0, 24),
+            HourlyWeather("10:00", R.drawable.ic_sunny_day, -25.0, 20),
+            HourlyWeather("11:00", R.drawable.ic_sunny_day, -20.0, 18),
+            HourlyWeather("12:00", R.drawable.ic_sunny_day, -18.0, 15),
+            HourlyWeather("13:00", R.drawable.ic_sunny_day, -15.0, 14),
+            HourlyWeather("14:00", R.drawable.ic_sunny_day, -12.0, 12),
+            HourlyWeather("15:00", R.drawable.ic_sunny_day, -10.0, 10),
+            HourlyWeather("16:00", R.drawable.ic_cloudy_day, -8.0, 15),
+            HourlyWeather("17:00", R.drawable.ic_cloudy_day, -10.0, 18),
+            HourlyWeather("18:00", R.drawable.ic_cloudy_night, -12.0, 20),
+            HourlyWeather("19:00", R.drawable.ic_cloudy_night, -15.0, 22),
+            HourlyWeather("20:00", R.drawable.ic_cloudy_night, -18.0, 25)
+        )
+    }
+
 }
