@@ -7,11 +7,11 @@
 
     <!-- Полумесяц по центру вверху -->
     <path
-        android:fillColor="#D8D8C8 "
+        android:fillColor="#F4F4B5"
         android:pathData="
-            M30,30
-            a20,20 0,1 1,0 32
-            a12,12 0,1 0,0 -32
+            M65,26
+            a20,20 0,1 0,0 32
+            a12,12 0,1 1,0 -32
             z
         " />
 

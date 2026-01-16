@@ -26,7 +26,6 @@ class WeatherRepository {
     private val _error = MutableLiveData<String?>()
     val error: LiveData<String?> = _error
 
-
     // Добавь метод для загрузки с автоматическими параметрами
     suspend fun loadWeatherWithAutoLocation(locationData: LocationData) {
         _error.postValue(null)
@@ -51,7 +50,7 @@ class WeatherRepository {
 
     private fun fetchWeatherFromOpenMeteo(lat: Double, lon: Double, timezone: String): WeatherData? {
         return try {
-            // ⭐ Используем переданный часовой пояс
+            // ⭐ ИСПРАВЛЕНО: Удалены лишние пробелы из URL
             val url = "https://api.open-meteo.com/v1/forecast?" +
                     "latitude=$lat&longitude=$lon&" +
                     "current_weather=true&" +
@@ -59,7 +58,7 @@ class WeatherRepository {
                     "hourly=relative_humidity_2m&" +
                     "daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,weathercode&" +
                     "forecast_days=8&" +
-                    "timezone=$timezone" // ⭐ Автоматический часовой пояс
+                    "timezone=$timezone"
 
             val jsonText = URL(url).readText()
 
@@ -70,6 +69,11 @@ class WeatherRepository {
             val temperature = currentWeather.getDouble("temperature")
             val windSpeedMs = currentWeather.getDouble("windspeed")
             val windDirection = currentWeather.getDouble("winddirection")
+
+            // ⭐ Получаем weathercode для текущей погоды
+            val daily = jsonObject.getJSONObject("daily")
+            val currentWeatherCode = currentWeather.getInt("weathercode")
+            val weatherDescription = getWeatherDescription(currentWeatherCode)
 
             // ⭐ Влажность из hourly данных
             val humidity = extractCurrentHumidity(jsonObject)
@@ -83,7 +87,6 @@ class WeatherRepository {
             //прогноз на 7 дней
             val dailyForecast = extractDailyForecast(jsonObject)
 
-
             val tempStr = "${temperature.toInt()}°"
             val feelsLikeStr = "${feelsLike.toInt()}°"
             val windSpeedF = windSpeedMs.toFloat()
@@ -92,19 +95,37 @@ class WeatherRepository {
 
             WeatherData(
                 temperature = tempStr,
-                description = "Облачно",
+                description = weatherDescription, // ⭐ ИСПРАВЛЕНО: реальное описание из API
                 feelsLike = feelsLikeStr,
                 windSpeed = windSpeedF,
                 windDirection = windDirF,
                 windDirectionText = windDirText,
-                humidity = humidity, // Передаём влажность
-                sunrise = sunrise,    // восход
-                sunset = sunset, //закат
-                dailyForecast = dailyForecast
+                humidity = humidity,
+                sunrise = sunrise,
+                sunset = sunset,
+                dailyForecast = dailyForecast,
+                weatherCode = currentWeatherCode
             )
         } catch (e: Exception) {
             Log.e("WeatherRepo", "Open-Meteo parsing error", e)
             null
+        }
+    }
+
+    // ⭐ НОВЫЙ МЕТОД: получение описания погоды по weathercode
+    private fun getWeatherDescription(weatherCode: Int): String {
+        return when {
+            weatherCode == 0 -> "Ясно"
+            weatherCode == 1 -> "Малооблачно"
+            weatherCode == 2 -> "Переменная облачность" // ⭐ Более точное описание
+            weatherCode == 3 -> "Пасмурно"
+            weatherCode in 45..48 -> "Туман"
+            weatherCode in 51..57 -> "Морось"
+            weatherCode in 61..67 -> "Дождь"
+            weatherCode in 71..77 -> "Снег"
+            weatherCode in 80..82 -> "Ливень"
+            weatherCode in 95..99 -> "Гроза"
+            else -> "Облачно"
         }
     }
 
@@ -215,8 +236,6 @@ class WeatherRepository {
         }
     }
 
-
-
     // ⭐ Извлекаем восход и закат
     private fun extractSunriseSunset(jsonObject: JSONObject): Pair<String, String> {
         return try {
@@ -229,7 +248,6 @@ class WeatherRepository {
             val sunsetTime = sunsetArray.getString(0)   // "2026-01-14T16:17"
 
             // ⭐ ПРОСТО ИЗВЛЕКАЕМ ВРЕМЯ БЕЗ КОНВЕРТАЦИИ
-            // Формат: "2026-01-14T09:34" → "09:34"
             val sunriseFormatted = sunriseTime.substringAfter("T").substring(0, 5)
             val sunsetFormatted = sunsetTime.substringAfter("T").substring(0, 5)
 
@@ -325,6 +343,7 @@ class WeatherRepository {
     suspend fun loadHourlyForecastWithAutoLocation(locationData: LocationData): List<HourlyWeather> {
         return withContext(Dispatchers.IO) {
             try {
+                // ⭐ ИСПРАВЛЕНО: Удалены лишние пробелы из URL
                 val url = "https://api.open-meteo.com/v1/forecast?" +
                         "latitude=${locationData.location.latitude}&" +
                         "longitude=${locationData.location.longitude}&" +
@@ -342,17 +361,17 @@ class WeatherRepository {
                 val weatherCodeArray = hourly.getJSONArray("weathercode")
 
                 // Получаем текущее время в формате, который использует Open-Meteo
-                val now = Calendar.getInstance(TimeZone.getTimeZone("Asia/Yekaterinburg"))
+                val now = Calendar.getInstance(TimeZone.getTimeZone(locationData.timezone))
                 val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US)
-                val currentTime = formatter.format(now.time) // Формат: "2026-01-13T18:00"
+                val currentTime = formatter.format(now.time)
 
-// Ищем индекс текущего часа в массиве
+                // Ищем индекс текущего часа в массиве
                 var startIndex = -1
                 for (i in 0 until timeArray.length()) {
-                    val timeStr = timeArray.getString(i) // Формат: "2026-01-13T18:00"
+                    val timeStr = timeArray.getString(i)
 
                     // ✅ ПРАВИЛЬНОЕ СРАВНЕНИЕ
-                    if (timeStr.startsWith(currentTime.substring(0, 13))) { // Берём первые 13 символов: "2026-01-13T18"
+                    if (timeStr.startsWith(currentTime.substring(0, 13))) {
                         startIndex = i
                         break
                     }
@@ -397,7 +416,6 @@ class WeatherRepository {
                 hourlyData.take(24)
             } catch (e: Exception) {
                 Log.e("WeatherRepo", "Hourly forecast error", e)
-                // ⭐ ИСПРАВЛЕНИЕ 5: Правильное имя метода (было getMockHourly0Data)
                 getMockHourlyData().take(24)
             }
         }
@@ -405,22 +423,25 @@ class WeatherRepository {
 
     // Улучшенный метод определения иконки с учётом ночи/дня
     private fun getWeatherIcon(weatherCode: Int, hourStr: String): Int {
-        // Определяем, день или ночь (6:00–20:00 = день)
         val hour = hourStr.split(":")[0].toIntOrNull() ?: 12
         val isDay = hour in 6..19
 
         return when (weatherCode) {
             0 -> if (isDay) R.drawable.ic_sunny_day else R.drawable.ic_clear_night
-            1, 2, 3 -> if (isDay) R.drawable.ic_cloudy_day else R.drawable.ic_cloudy_night
+            1 -> if (isDay) R.drawable.ic_partly_cloudy_day else R.drawable.ic_partly_cloudy_night
+            2 -> if (isDay) R.drawable.ic_mostly_cloudy_day else R.drawable.ic_mostly_cloudy_night
+            3 -> if (isDay) R.drawable.ic_cloudy_day else R.drawable.ic_cloudy_night
             45, 48 -> R.drawable.ic_foggy
-            51, 53, 55, 56, 57 -> R.drawable.ic_rainy
-            61, 63, 65, 66, 67 -> R.drawable.ic_rainy
+            51, 53, 55, 56, 57, 61, 63, 65, 66, 67 -> R.drawable.ic_rainy
             71, 73, 75, 77 -> R.drawable.ic_snowy
-            80, 81, 82 -> R.drawable.ic_rainy
-            95, 96, 99 -> R.drawable.ic_rainy
+            80, 81, 82 -> R.drawable.ic_heavy_rain
+            95 -> R.drawable.ic_stormy
+            96 -> R.drawable.ic_hail
+            97, 98, 99 -> R.drawable.ic_hail
             else -> if (isDay) R.drawable.ic_cloudy_day else R.drawable.ic_cloudy_night
         }
     }
+
     // Вспомогательные методы
     private fun parseHourFromTimestamp(timestamp: String): String {
         return try {
@@ -470,5 +491,4 @@ class WeatherRepository {
             HourlyWeather("20:00", R.drawable.ic_cloudy_night, -18.0, 25)
         )
     }
-
 }

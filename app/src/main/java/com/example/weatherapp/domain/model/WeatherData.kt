@@ -10,5 +10,6 @@ data class WeatherData(
     val humidity: Int, //влажность
     val sunrise: String, // Восход
     val sunset: String,   // Закат
-    val dailyForecast: List<DailyForecastItem> //Прогноз на 7 дней
+    val dailyForecast: List<DailyForecastItem>, //Прогноз на 7 дней
+    val weatherCode: Int // ⭐ ДОБАВЬ ЭТО
 )

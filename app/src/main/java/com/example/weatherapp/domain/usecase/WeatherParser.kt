@@ -1,3 +1,4 @@
+// domain/usecase/WeatherParser.kt
 package com.example.weatherapp.domain.usecase
 
 import com.example.weatherapp.domain.model.WeatherCondition
@@ -19,6 +20,8 @@ object WeatherParser {
                     lowerDesc.contains("storm") -> WeatherCondition.RAIN
 
             lowerDesc.contains("снег") || lowerDesc.contains("snow") -> WeatherCondition.SNOW
+
+            lowerDesc.contains("туман") || lowerDesc.contains("fog") -> WeatherCondition.FOGGY // ⭐ Туман
 
             else -> WeatherCondition.CLEAR
         }

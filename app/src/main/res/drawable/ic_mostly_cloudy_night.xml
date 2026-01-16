@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+android:width="96dp"
+android:height="96dp"
+android:viewportWidth="96"
+android:viewportHeight="96">
+
+<!-- Месяц отраженный, сдвинут сильно вправо -->
+<path
+    android:fillColor="#F4F4B5"
+    android:pathData="
+            M69,20
+            a20,20 0,1 0,0 32
+            a12,12 0,1 1,0 -32
+            z
+        " />
+
+<!-- Облако -->
+<path
+    android:fillColor="#C5C5C5"
+    android:pathData="
+            M60,56
+            a16,16 0,0 1,-16 16
+            H20
+            a20,20 0,1 1,0 -40
+            c1.1,0 2.2,0.1 3.3,0.3
+            A16,16 0,0,1 44,40
+            c8.8,0 16,7.2 16,16
+            z
+        " />
+
+</vector>

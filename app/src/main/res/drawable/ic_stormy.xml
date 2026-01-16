@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+
+    <!-- Маленькое облако в левом нижнем углу основного -->
+    <path
+        android:fillColor="#6F6C6C"
+        android:alpha="0.8"
+        android:pathData="
+            M56,68
+            a12,12 0,0 1,-12 12
+            H32
+            a15,15 0,1 1,0 -30
+            c0.8,0 1.6,0.1 2.4,0.3
+            A12,12 0,0,1 52,52
+            c6.6,0 12,5.4 12,12
+            z" />
+    <group
+        android:scaleX="1"
+        android:scaleY="1"
+        android:translateX="-5"
+        android:translateY="44">
+
+        <!-- Внешний контур -->
+        <path
+            android:fillColor="#DECF5A"
+            android:pathData="
+                M48,20
+                L36,32
+                L45,32
+                L28,48
+                L35,40
+                L32,40
+                L48,24
+                L40,24
+                L56,8
+                L48,16
+
+                " />
+
+        <!-- Внутренняя часть -->
+        <path
+            android:fillColor="#F8E12C"
+            android:pathData="
+                M48,24
+                L40,32
+                L44,32
+                L32,44
+                L38,38
+                L36,38
+                L49,26
+                L42,26
+                L54,14
+                L48,20
+
+
+                " />
+    </group>
+    <!-- Основное облако по центру -->
+    <path
+        android:fillColor="#8A8787"
+        android:pathData="
+            M76,56
+            a16,16 0,0 1,-16 16
+            H36
+            a20,20 0,1 1,0 -40
+            c1.1,0 2.2,0.1 3.3,0.3
+            A16,16 0,0,1 60,40
+            c8.8,0 16,7.2 16,16
+            z" />
+
+
+
+</vector>

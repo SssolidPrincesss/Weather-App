@@ -9,7 +9,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.location.Geocoder
 import android.location.Location
 import android.location.LocationManager
 import android.os.Bundle
@@ -30,19 +29,22 @@ import com.example.weatherapp.data.model.LocationData
 import com.example.weatherapp.data.repository.RussianWeatherRepository
 import com.example.weatherapp.data.repository.WeatherRepository
 import com.example.weatherapp.domain.model.DailyForecastItem
-import com.example.weatherapp.domain.model.HourlyWeather
 import com.example.weatherapp.domain.model.TimeOfDay
 import com.example.weatherapp.domain.model.WeatherCondition
 import com.example.weatherapp.utils.GeoUtils
 import com.example.weatherapp.utils.TimeUtils
 import android.net.Uri
 import androidx.lifecycle.lifecycleScope
+import com.example.weatherapp.domain.model.WeatherData
+import com.example.weatherapp.domain.usecase.BackgroundSelectorUseCase
+import com.example.weatherapp.utils.BackgroundManager
 import com.example.weatherapp.utils.LocationUtils
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
+    private var currentWeatherData: WeatherData? = null
+    private val backgroundSelector = BackgroundSelectorUseCase()
     private lateinit var weatherRepo: WeatherRepository
     private lateinit var russianWeatherRepo: RussianWeatherRepository
 
@@ -129,7 +131,7 @@ class MainActivity : AppCompatActivity() {
 
                 val timezone = GeoUtils.getTimeZoneByCoordinates(lat, lon)
                 // ⭐ ИСПОЛЬЗУЕМ УТИЛИТУ:
-                val locationName = LocationUtils.getCityName(this as Context, lat, lon)
+                val locationName = LocationUtils.getCityName(this@MainActivity, lat, lon)
 
                 val locationData = LocationData(location ?: createDefaultLocation(), timezone, locationName)
                 findViewById<TextView>(R.id.tvLocationName).text = locationName
@@ -259,11 +261,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateWeatherUI(data: com.example.weatherapp.domain.model.WeatherData) {
+        currentWeatherData = data
+
         tvTemperature.text = data.temperature
         tvWeatherDesc.text = data.description
         tvFeelsLike.text = "Ощущается как ${data.feelsLike}"
         tvSunrise.text = data.sunrise
         tvSunset.text = data.sunset
+
+
 
         updateHumidityUI(data.humidity)
         updateWindUI(data)
@@ -294,14 +300,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getWeatherIcon(weatherCode: Int): Int {
-        return when {
-            weatherCode == 0 -> R.drawable.ic_sunny_day
-            weatherCode in 1..3 -> R.drawable.ic_cloudy_day
-            weatherCode in 45..48 -> R.drawable.ic_foggy
-            weatherCode in 51..57 -> R.drawable.ic_rainy
-            weatherCode in 61..67 -> R.drawable.ic_rainy
-            weatherCode in 71..77 -> R.drawable.ic_snowy
-            weatherCode in 80..82 -> R.drawable.ic_rainy
+        return when (weatherCode) {
+            0 -> R.drawable.ic_sunny_day
+            1 -> R.drawable.ic_partly_cloudy_day       // ⭐ Малооблачно
+            2 -> R.drawable.ic_mostly_cloudy_day      // ⭐ Переменная облачность
+            3 -> R.drawable.ic_cloudy_day             // Пасмурно
+            45, 48 -> R.drawable.ic_foggy
+            51, 53, 55, 56, 57, 61, 63, 65, 66, 67 -> R.drawable.ic_rainy  // ⭐ Морось = дождь
+            71, 73, 75, 77 -> R.drawable.ic_snowy
+            80, 81, 82 -> R.drawable.ic_heavy_rain
+            95 -> R.drawable.ic_stormy
+            96, 97, 98, 99 -> R.drawable.ic_hail
             else -> R.drawable.ic_cloudy_day
         }
     }
@@ -430,51 +439,22 @@ class MainActivity : AppCompatActivity() {
 
     // === ФОН ===
     private fun updateBackground() {
-        val weatherDesc = tvWeatherDesc.text.toString()
-        val weatherCondition = parseWeatherCondition(weatherDesc)
-        val timeOfDay = TimeUtils.getCurrentTimeOfDay()
+        val input = BackgroundSelectorUseCase.Input(
+            weatherCode = currentWeatherData?.weatherCode ?: 0
+        )
+        val output = backgroundSelector.execute(input)
 
-        val backgroundRes = getBackgroundResource(weatherCondition, timeOfDay)
+        val backgroundRes = BackgroundManager.getBackgroundResource(
+            this,
+            output.weatherCondition,
+            output.timeOfDay,
+            output.season
+        )
+
         performSmoothBackgroundTransition(backgroundRes)
     }
 
-    private fun parseWeatherCondition(description: String): WeatherCondition {
-        val lowerDesc = description.lowercase()
-        return when {
-            lowerDesc.contains("ясно") || lowerDesc.contains("солнечно") ||
-                    lowerDesc.contains("clear") || lowerDesc.contains("sun") -> WeatherCondition.CLEAR
-            lowerDesc.contains("облачно") || lowerDesc.contains("пасмурно") ||
-                    lowerDesc.contains("cloud") || lowerDesc.contains("overcast") -> WeatherCondition.CLOUDY
-            lowerDesc.contains("дождь") || lowerDesc.contains("ливень") ||
-                    lowerDesc.contains("rain") || lowerDesc.contains("drizzle") ||
-                    lowerDesc.contains("гроза") || lowerDesc.contains("thunder") ||
-                    lowerDesc.contains("storm") -> WeatherCondition.RAIN
-            lowerDesc.contains("снег") || lowerDesc.contains("snow") -> WeatherCondition.SNOW
-            else -> WeatherCondition.CLEAR
-        }
-    }
 
-    private fun getBackgroundResource(
-        weatherCondition: WeatherCondition,
-        timeOfDay: TimeOfDay
-    ): Int = when (weatherCondition) {
-        WeatherCondition.CLEAR -> when (timeOfDay) {
-            TimeOfDay.DAY -> R.drawable.bg_clear_day
-            TimeOfDay.NIGHT -> R.drawable.bg_clear_night
-        }
-        WeatherCondition.CLOUDY -> when (timeOfDay) {
-            TimeOfDay.DAY -> R.drawable.bg_cloudy_day
-            TimeOfDay.NIGHT -> R.drawable.bg_cloudy_night
-        }
-        WeatherCondition.RAIN -> when (timeOfDay) {
-            TimeOfDay.DAY -> R.drawable.bg_rain_day
-            TimeOfDay.NIGHT -> R.drawable.bg_rain_night
-        }
-        WeatherCondition.SNOW -> when (timeOfDay) {
-            TimeOfDay.DAY -> R.drawable.bg_snow_day
-            TimeOfDay.NIGHT -> R.drawable.bg_snow_night
-        }
-    }
 
     private fun performSmoothBackgroundTransition(backgroundRes: Int) {
         val newDrawable = ContextCompat.getDrawable(this, backgroundRes)

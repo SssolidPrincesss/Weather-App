@@ -19,12 +19,55 @@
             z
         " />
 
-    <!-- Узкие стилизованные капли (направлены вниз) -->
     <group
+        android:rotation="20"
         android:scaleX="1"
         android:scaleY="1"
-        android:translateX="-3"
-        android:translateY="4">
+        android:translateX="36"
+        android:translateY="-12">
+
+
+        <!-- Тонкая капля по центру -->
+        <path
+            android:fillColor="#42A5F5"
+            android:pathData="
+                M48,68
+                Q50,64 52,68
+                L52,78
+                Q50,82 48,78
+                Z" />
+
+
+    </group>
+
+    <group
+        android:rotation="20"
+        android:scaleX="1"
+        android:scaleY="1"
+        android:translateX="1"
+        android:translateY="-17">
+
+
+        <!-- Тонкая капля по центру -->
+        <path
+            android:fillColor="#6FA4CA"
+            android:pathData="
+                M48,68
+                Q50,64 52,68
+                L52,78
+                Q50,82 48,78
+                Z" />
+
+
+    </group>
+
+    <!-- Узкие стилизованные капли (направлены вниз) -->
+    <group
+        android:rotation="20"
+        android:scaleX="1"
+        android:scaleY="1"
+        android:translateX="15"
+        android:translateY="-8">
 
         <!-- Тонкая капля слева -->
         <path
@@ -89,6 +132,50 @@
             A16,16 0,0,1 60,40
             c8.8,0 16,7.2 16,16
             z" />
+
+    <group
+        android:rotation="20"
+        android:scaleX="1"
+        android:scaleY="1"
+        android:translateX="22"
+        android:translateY="-20">
+
+
+
+        <!-- Мелкие тонкие капли -->
+        <path
+            android:fillColor="#90CAF9"
+            android:pathData="
+                M42,80
+                Q43,78 44,80
+                L44,84
+                Q43,86 42,84
+                Z" />
+
+
+    </group>
+
+    <group
+        android:rotation="20"
+        android:scaleX="1"
+        android:scaleY="1"
+        android:translateX="14"
+        android:translateY="-20">
+
+
+        <!-- Тонкая капля справа -->
+        <path
+            android:fillColor="#5D93BD"
+            android:pathData="
+                M60,70
+                Q62,66 64,70
+                L64,76
+                Q62,80 60,76
+                Z" />
+
+
+    </group>
+
 
 
 
